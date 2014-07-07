@@ -1,0 +1,152 @@
+package com.example.semilog;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Vibrator;
+import android.support.v4.app.NotificationCompat;
+import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.view.Window;
+import android.webkit.JsResult;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends ActionBarActivity {
+	
+	private static final String TAG = "LocalBrowser";
+	private static final String LOG_TAG = "WebViewDemo";
+	private BackPressCloseHandler backPressCloseHandler;
+	private long backKeyPressedTime = 0;
+	private Toast toast;
+	private Activity activity;
+	private final Handler handler = new Handler();
+	private WebView webView;
+	private TextView textView;
+	private NotificationManager notimng;
+	
+	private final long	FINSH_INTERVAL_TIME    = 2000;
+  private long		backPressedTime        = 0;
+
+  @SuppressLint("JavascriptInterface")
+  @Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		
+		
+		startActivity(new Intent(this,Splash.class));
+		
+		
+		webView = new WebView(this);
+		webView.getSettings().setJavaScriptEnabled(true);
+		webView.setWebViewClient(new WebViewClient());
+		webView.setWebChromeClient(new WebChromeClient());
+		
+		WebSettings settings = webView.getSettings();  
+    settings.setJavaScriptEnabled(true);
+    settings.setDomStorageEnabled(true);
+    settings.setDatabaseEnabled(true);
+    settings.setAppCacheEnabled(false);
+    
+		//webView.addJavascriptInterface(new AndroidBridge(), "HybridApp");
+		
+    
+	
+		 webView.setWebChromeClient(new WebChromeClient(){
+			
+			@Override
+			public boolean onJsAlert(final WebView view, final String url, final String message, JsResult result) {
+				Log.d(TAG, "onJsAlert(" + view + ", " + url + ", " + message + ", " + result + ")");
+				
+				//startService(new Intent("com.example.tt"));
+				
+				 notimng = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		   		PendingIntent notiP = PendingIntent.getActivity(	getApplicationContext(), 0, 
+		   				new Intent(getApplicationContext(), MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+
+		   		Notification notice = new NotificationCompat.Builder(getApplicationContext())
+		   				.setContentTitle("SemiLog")
+		   				.setContentText("알림확인")
+		   				.setSmallIcon(R.drawable.ic_launcher)
+		   				.setTicker("알림").setAutoCancel(true)
+		   				.setContentIntent(notiP).build();
+
+		   		notimng.notify(0, notice);
+		      
+		   		/*
+		    	if ( notimng != null ) {
+		  			notimng.cancel(0);
+		  		}
+		    	*/
+		   		 Vibrator vibe = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+		      vibe.vibrate(1000);
+		    	
+		      
+				
+		      AlertDialog alert = new AlertDialog.Builder(MainActivity.this)
+		    	.setIcon(R.drawable.ic_launcher)
+		    	.setTitle("알림")
+		    	.setMessage("알림을 연장하시겠습니까?")
+		    	.setCancelable(false)
+		    	.setPositiveButton("확인", new DialogInterface.OnClickListener() {	
+		  			@Override
+		  			public void onClick(DialogInterface dialog, int which) {
+		  				
+		  				notimng.cancel(0);
+		  				webView.loadUrl("javascript:no()");
+		  				
+		  			}
+		  		}).setNegativeButton("취소", new DialogInterface.OnClickListener() {
+		      @Override
+		      public void onClick(DialogInterface dialog, int which) {
+		       
+		       	notimng.cancel(0);
+		      		webView.loadUrl("javascript:yes()");
+		        }
+		      }).create();
+		    	alert.show();
+		      
+		      
+				result.confirm(); 
+				return true;
+				
+			}
+      });
+		
+		webView.loadUrl("file:///android_asset/www/index.html");
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(webView);
+
+	
+}
+	
+	
+	
+	
+	 @Override 
+	      public void onBackPressed() {
+	          long tempTime        = System.currentTimeMillis();
+	          long intervalTime    = tempTime - backPressedTime;
+	   
+	          if ( 0 <= intervalTime && FINSH_INTERVAL_TIME >= intervalTime ) {
+	              super.onBackPressed(); 
+	              System.exit(0);
+	          } else { 
+	              backPressedTime = tempTime; 
+	              Toast.makeText(getApplicationContext(),"'뒤로'버튼을한번더누르시면종료됩니다.",Toast.LENGTH_SHORT).show(); 
+	          } 
+	      } 
+	
+}
